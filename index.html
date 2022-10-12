@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Treasure Hunt Game</title>
+    <style>
+    body {
+      background-color: black;
+      color: aquamarine;
+    }
+    
+    table {
+      border: 2px solid aquamarine;
+      margin: 5px;
+    }
+    td {
+      border: 1px solid aquamarine;
+      height: 55px;
+      width: 55px;
+      font-size: x-large;
+      text-align: center;
+    }
+    
+    @media only screen and (max-width: 600px) {
+      td {
+        height: 30px;
+        width: 30px;
+        font-size: large;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <audio id="audio1" src="notification_sound.mp3"></audio>
+    <audio id="audio2" src="notification_sound1.mp3"></audio>
+    <audio id="audio3" src="notification_sound2.mp3"></audio>
+    <center>
+   <div>
+        <h1>Treasure Game</h1>
+        <h1>Welcome <span id="player-name"></span></h1>
+        <h1>Attempts : <span id="attempts">0</span></h1>
+      </div>
+      <div>
+        <table id="my-game"></table>
+      </div>
+    </center>
+  </body>
+  <script>
+ if (!localStorage.getItem("winner")) {
+      localStorage.setItem("winner", JSON.stringify([]));
+      console.log(localStorage.getItem("winner"));
+    }
+
+    let attempt = 0;
+    const audio = new Audio("audio.mp3");
+    const winner = new Audio("winner.mp3");
+    const loser = new Audio("loser.mp3");
+    function main() {
+      // Input Take Username
+      let username = prompt("Enter your Name");
+      console.log(username);
+      while (!username) {
+        username = prompt("Username Cannot Be Empty, Please Try Again");
+      }
+
+      //Access ID from Player-name and Display there
+      document.getElementById("player-name").innerText = username;
+
+      //Generate TableData from 1 to 100
+      const tableData = [];
+
+      for (let i = 1; i <= 100; i++) {
+        //Push Elements 1 to 100
+        tableData.push(i);
+      }
+      console.log(tableData);
+      tableData.sort(() => Math.random() - 0.5);
+
+      //Access Table Tag
+      let table = document.getElementById("my-game");
+      let row,
+        col,
+        counter = 0;
+      let primesArray = [2, 3, 5, 7];
+      let visitedElements = [];
+      for (let i = 1; i <= 10; i++) {
+        // Generate Row Tags <tr>
+        row = document.createElement("tr");
+        for (let j = 1; j <= 10; j++) {
+          //Generate <td> Tags
+          col = document.createElement("td");
+
+          //Assign ID From Counter
+          col.id = tableData[counter];
+
+          //Add Inner Text from Table Data
+          // col.innerText = tableData[counter];
+
+          col.addEventListener("click", function (event) {
+            // console.log(event.target.id);
+            let clickedNumber = event.target.id;
+            console.log(clickedNumber);
+            if (clickedNumber == 1) {
+              //Play winning Sound
+              winner.play();
+              //Winner Data
+              let winnerData = { playerName: username, attempts: attempt + 1 };
+              //Get from Local Storage
+              let winners = JSON.parse(localStorage.getItem("winner"));
+              //Flat it
+              winners = winners.flat();
+              //Push the new Winners
+              winners.push(winnerData);
+              //Call Ranking Function
+              winners = ranking(winners);
+
+              //Set New Winner Data in Local Storage
+              localStorage.setItem("winner", JSON.stringify(winners));
+              // location.reload("./leaderboard.html");
+
+              //Show Alert
+              alert(
+                `You are a Winner, Congratulations!!!! You took ${attempt + 1} Attempt to Win.`
+              );
+
+              //Redirect to Leaderboard
+              location.replace("./leaderboard.html");
+            } else if (primesArray.includes(+clickedNumber)) {
+              loser.play();
+              alert("You are Loser! Better Luck Next Time");
+              location.reload("/");
+            } else if (visitedElements.includes(+clickedNumber)) {
+              alert("The Block is Already Selected");
+            } else {
+              for (let i = +clickedNumber; i <= 100; i++) {
+                if (i % +clickedNumber == 0) {
+                  document.getElementById(i).style.backgroundColor =
+                    "aquamarine";
+                  visitedElements.push(i);
+                }
+              }
+              attempt++;
+              audio.play();
+            }
+            document.getElementById("attempts").innerText = attempt;
+          });
+
+          //Append the td Tag to the Row
+          row.appendChild(col);
+
+          //Incement Count
+          counter++;
+        }
+
+        //Append the Whole row to Table
+        table.appendChild(row);
+      }
+    }
+
+    //Invoke the Function
+    main();
+
+    function ranking(winnerData) {
+      //New Winners
+      let newWinners = [];
+      //Array to store Elements with Same attempts
+      let temp = [];
+      // //Convert 2D to 1D
+      // winnerData = winnerData.flat();
+      //Sort by Number of Attempts
+      winnerData.sort((a, b) => a.attempts - b.attempts);
+      //Give/Initialise Rank 1
+      temp[0] = winnerData[0];
+
+      //Loop to Handle 2 Winners with Same number of Attempts
+      for (let i = 1; i < winnerData.length; i++) {
+        if (winnerData[i].attempts == winnerData[i - 1].attempts) {
+          temp.push(winnerData[i]);
+        } else {
+          newWinners.push(temp);
+          temp = [];
+          temp.push(winnerData[i]);
+        }
+      }
+      newWinners.push(temp);
+      return newWinners;
+      
+    }
+  </script>
+</html>
+
+
+
+<!-- 
+  const rankingsBody = document.querySelector("#rankings > tbody");
+
+function loadRankings () {
+    const request = new XMLHttpRequest();
+
+    request.open("get", "http://127.0.0.1:5500/leaderboard.html");
+    request.onload = () => {
+        try {
+            const json = JSON.parse(request.responseText);
+            populateRankings(json);
+        } catch (e) {
+            console.warn("Could not load Player Rankings! :(");
+        }
+    };
+
+    request.send();
+}
+
+function populateRankings (json) {
+    // Populate Leaderboard
+    json.forEach((row) => {
+        const tr = document.createElement("tr");
+
+        row.forEach((cell) => {
+            const td = document.createElement("td");
+            td.textContent = cell;
+            tr.appendChild(td);
+        });
+
+        rankingsBody.appendChild(tr);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => { loadRankings (); });
+
+$("#search-leaderboard").keyup(function() {
+    var value = this.value;
+
+    $("table").find("tr").each(function(index) {
+        if (index === 0) return;
+
+        var if_td_has = false;
+        $(this).find('td').each(function () {
+            if_td_has = if_td_has || $(this).text().indexOf(value) !== -1; //Check if td's text matches key and then use OR to check it for all td's
+        });
+
+        $(this).toggle(if_td_has);
+
+    });
+}); -->
